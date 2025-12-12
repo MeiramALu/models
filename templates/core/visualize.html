@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="fw-bold text-dark mb-1">Визуализация данных</h2>
+    <p class="text-muted small mb-0">Построение зависимостей, распределений и анализ корреляций</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-sliders me-2 text-primary"></i>Настройки
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Тип визуализации</label>
+                        {{ form.plot_type }}
+                    </div>
+
+                    <hr class="border-secondary opacity-10 my-4">
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Ось X (Категория/Число)</label>
+                        {{ form.x_axis }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Ось Y (Число)</label>
+                        {{ form.y_axis }}
+                        <div class="form-text small text-muted">Необязательно для гистограмм</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">
+                            <i class="bi bi-palette me-1"></i>Группировка (Hue)
+                        </label>
+                        {{ form.hue }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark">Цветовая тема</label>
+                        {{ form.color_theme }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-magic me-2"></i>Построить график
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-graph-up me-2 text-success"></i>Результат
+                </h6>
+                {% if chart_image %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success">Успешно</span>
+                {% endif %}
+            </div>
+
+            <div class="card-body text-center p-0">
+                {% if chart_image %}
+                    <div class="p-3">
+                        <img src="data:image/png;base64,{{ chart_image }}" class="img-fluid rounded" alt="График">
+                    </div>
+                {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center bg-light text-muted p-5" style="min-height: 400px;">
+                        <div class="mb-3">
+                            <i class="bi bi-bar-chart-line fs-1 opacity-25"></i>
+                        </div>
+                        <h5 class="fw-light">График не построен</h5>
+                        <p class="small opacity-75">Выберите параметры слева и нажмите кнопку</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-grid-3x3 me-2 text-info"></i>Тепловая карта корреляции
+                </h6>
+            </div>
+            <div class="card-body text-center p-4">
+                {% if corr_matrix_image %}
+                    <img src="data:image/png;base64,{{ corr_matrix_image }}" class="img-fluid rounded" alt="Корреляция">
+                {% else %}
+                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 d-inline-block">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        Недостаточно числовых данных для построения матрицы корреляции.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

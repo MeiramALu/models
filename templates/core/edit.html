@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1">Редактирование данных</h2>
+        <p class="text-muted small mb-0">Очистка, заполнение пропусков и трансформация признаков</p>
+    </div>
+
+    <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+
+        {% if has_history %}
+        <button type="submit" name="btn_undo" class="btn btn-warning shadow-sm d-flex align-items-center gap-2 text-dark" title="Отменить последнее действие">
+            <i class="bi bi-arrow-counterclockwise"></i> Назад
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-light text-muted border shadow-sm d-flex align-items-center gap-2" disabled>
+            <i class="bi bi-arrow-counterclockwise"></i> Назад
+        </button>
+        {% endif %}
+
+        <button type="submit" name="btn_reset" class="btn btn-outline-danger d-flex align-items-center gap-2 shadow-sm" onclick="return confirm('Вы уверены? Это отменит ВСЕ изменения.');">
+            <i class="bi bi-x-circle"></i> Сбросить всё
+        </button>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-table me-2"></i>Предпросмотр данных</h5>
+        <span class="badge bg-light text-secondary border">Размерность: {{ df_shape }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive px-4 pb-3" style="max-height: 300px;">
+            <style>
+                .dataframe { width: 100%; border-collapse: collapse; }
+                .dataframe th { position: sticky; top: 0; background: #f8f9fa; z-index: 10; border-bottom: 2px solid #dee2e6; }
+            </style>
+            {{ df_head|safe }}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Пропущенные значения</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    {{ null_stats|safe }}
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-calculator-fill me-2"></i>Статистика (Describe)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    {{ df_describe|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-light border-bottom-0 pt-3 px-3">
+                <ul class="nav nav-tabs card-header-tabs" id="editTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold" id="delete-tab" data-bs-toggle="tab" data-bs-target="#delete" type="button">
+                            <i class="bi bi-trash3 me-2"></i>Удаление
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="fill-tab" data-bs-toggle="tab" data-bs-target="#fill" type="button">
+                            <i class="bi bi-droplet-half me-2"></i>Пропуски
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="encode-tab" data-bs-toggle="tab" data-bs-target="#encode" type="button">
+                            <i class="bi bi-code-square me-2"></i>Кодирование
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="scale-tab" data-bs-toggle="tab" data-bs-target="#scale" type="button">
+                            <i class="bi bi-graph-up-arrow me-2"></i>Масштаб
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="tab-content" id="myTabContent">
+
+                    <div class="tab-pane fade show active" id="delete" role="tabpanel">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Выберите колонки для удаления:</label>
+                                <div class="card bg-light border-0 p-3" style="max-height: 300px; overflow-y: auto;">
+                                    {% for checkbox in delete_form.columns_to_delete %}
+                                    <div class="form-check">
+                                        {{ checkbox.tag }}
+                                        <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                            {{ checkbox.choice_label }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+
+                                    {% if not delete_form.columns_to_delete|length %}
+                                        <div class="text-muted text-center small">Нет доступных колонок</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" name="btn_delete" class="btn btn-danger">
+                                    <i class="bi bi-trash3-fill me-2"></i>Удалить выбранное
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="fill" role="tabpanel">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="alert alert-primary bg-primary bg-opacity-10 border-0 d-flex align-items-center mb-3">
+                                <i class="bi bi-lightbulb-fill text-primary me-3 fs-5"></i>
+                                <div>Числовые → <strong>Медиана</strong>. Категории → <strong>Мода</strong>.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Выберите колонки:</label>
+                                <div class="card bg-white border p-3" style="max-height: 300px; overflow-y: auto;">
+                                    {% for checkbox in fill_form.columns_to_fill %}
+                                    <div class="form-check">
+                                        {{ checkbox.tag }}
+                                        <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                            {{ checkbox.choice_label }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" name="btn_fill" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>Заполнить пропуски
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="encode" role="tabpanel">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-5 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2">Метод:</label>
+                                    <div class="card bg-light border-0 p-3">
+                                        {% for radio in encoding_form.encoding_type %}
+                                        <div class="form-check mb-2">
+                                            {{ radio.tag }}
+                                            <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                                {{ radio.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-7 mb-3">
+                                    <label class="form-label fw-bold">Колонки:</label>
+                                    <div class="card bg-white border p-3" style="max-height: 250px; overflow-y: auto;">
+                                        {% for checkbox in encoding_form.columns_to_encode %}
+                                        <div class="form-check">
+                                            {{ checkbox.tag }}
+                                            <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                                {{ checkbox.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-2">
+                                <button type="submit" name="btn_encode" class="btn btn-warning text-dark">
+                                    <i class="bi bi-gear-wide-connected me-2"></i>Применить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="scale" role="tabpanel">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark mb-3">Метод масштабирования:</label>
+                                <div class="list-group">
+                                    {% for radio in scaling_form.scaling_method %}
+                                    <label class="list-group-item d-flex gap-3 border-0 bg-light mb-2 rounded align-items-center">
+                                        {{ radio.tag }}
+                                        <span class="form-check-label stretched-link text-dark" for="{{ radio.id_for_label }}">
+                                            {{ radio.choice_label }}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" name="btn_scale" class="btn btn-info text-white">
+                                    <i class="bi bi-sliders me-2"></i>Масштабировать
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

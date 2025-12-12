@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Локальные стили для Hero-секции */
+    .hero-bg {
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0) 60%),
+                    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05) 0%, rgba(255, 255, 255, 0) 60%);
+        background-color: #fff;
+    }
+
+    .feature-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+
+    .tech-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 5px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+
+<div class="card border-0 shadow-sm mb-5 hero-bg overflow-hidden position-relative">
+    <div class="card-body p-lg-5 text-center position-relative z-1">
+
+        <div class="mb-3 d-inline-block">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-3 py-2 rounded-pill">
+                <i class="bi bi-stars me-1"></i> No-Code Machine Learning
+            </span>
+        </div>
+
+        <h1 class="display-4 fw-bold text-dark mb-3 tracking-tight">
+            Тренируйте модели AI <br>
+            <span class="text-primary position-relative">
+                без написания кода
+                <svg class="position-absolute start-0 bottom-0 w-100 text-primary opacity-25" height="10" viewBox="0 0 100 10" preserveAspectRatio="none" style="z-index:-1;">
+                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="8" fill="none" />
+                </svg>
+            </span>
+        </h1>
+
+        <div class="col-lg-7 mx-auto">
+            <p class="lead text-secondary mb-4" style="line-height: 1.6;">
+                Профессиональный инструмент для аналитиков данных. Загружайте CSV, очищайте данные,
+                находите инсайты на графиках и обучайте модели Scikit-Learn в едином интерфейсе.
+            </p>
+
+            <div class="d-flex justify-content-center gap-3 mb-5">
+                <a href="{% url 'upload_data' %}" class="btn btn-primary btn-lg px-5 py-3 rounded-3 shadow-sm fw-bold">
+                    <i class="bi bi-rocket-takeoff-fill me-2"></i>Начать работу
+                </a>
+            </div>
+
+            <div class="d-flex justify-content-center flex-wrap gap-2 opacity-75">
+                <span class="tech-badge"><i class="bi bi-filetype-py"></i> Python</span>
+                <span class="tech-badge"><i class="bi bi-box-seam"></i> Scikit-Learn</span>
+                <span class="tech-badge"><i class="bi bi-table"></i> Pandas</span>
+                <span class="tech-badge"><i class="bi bi-graph-up"></i> Seaborn</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4" id="features">
+    <div class="col-lg-6">
+        <h4 class="fw-bold mb-4 ps-2 border-start border-4 border-primary">Как это работает</h4>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="list-group list-group-flush border-0">
+
+                    <div class="d-flex mb-4 position-relative">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; font-weight: bold; font-size: 1.2rem;">1</div>
+                            <div class="vr position-absolute start-0 ms-4 mt-2 bg-secondary opacity-25" style="height: 100%; top: 40px; width: 2px;"></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3 pb-2">
+                            <h6 class="fw-bold mb-1 text-dark">Загрузка данных</h6>
+                            <p class="text-muted small mb-0">Импорт CSV файлов любого размера. Автоматическое определение типов данных.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex mb-4 position-relative">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-white border border-2 border-primary text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: bold; font-size: 1.2rem;">2</div>
+                            <div class="vr position-absolute start-0 ms-4 mt-2 bg-secondary opacity-25" style="height: 100%; top: 40px; width: 2px;"></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3 pb-2">
+                            <h6 class="fw-bold mb-1 text-dark">Препроцессинг</h6>
+                            <p class="text-muted small mb-0">Умное заполнение пропусков (Median/Mode), кодирование категорий (One-Hot/Label) и масштабирование.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex mb-4 position-relative">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-white border border-2 border-primary text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: bold; font-size: 1.2rem;">3</div>
+                            <div class="vr position-absolute start-0 ms-4 mt-2 bg-secondary opacity-25" style="height: 100%; top: 40px; width: 2px;"></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3 pb-2">
+                            <h6 class="fw-bold mb-1 text-dark">Визуализация</h6>
+                            <p class="text-muted small mb-0">Построение зависимостей (Scatter, Line), распределений (Hist, Box) и матриц корреляции.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex position-relative">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;"><i class="bi bi-check-lg fs-4"></i></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3 pt-2">
+                            <h6 class="fw-bold mb-1 text-dark">Обучение и Экспорт</h6>
+                            <p class="text-muted small mb-0">Тренировка моделей (Regression/Classification) и скачивание готового <code>.joblib</code> файла.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <h4 class="fw-bold mb-4 ps-2 border-start border-4 border-success">Почему мы?</h4>
+        <div class="row g-3">
+
+            <div class="col-12">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="rounded bg-primary bg-opacity-10 text-primary p-3 me-3">
+                            <i class="bi bi-shield-check fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">Безопасность данных</h6>
+                            <p class="text-muted small mb-0">
+                                Мы не храним ваши данные вечно. Всё обрабатывается в рамках одной сессии и удаляется при выходе.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="rounded bg-success bg-opacity-10 text-success p-3 me-3">
+                            <i class="bi bi-lightning-charge fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">Мгновенный результат</h6>
+                            <p class="text-muted small mb-0">
+                                Проверка гипотез занимает минуты, а не часы написания кода в Jupyter Notebook.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card border-0 shadow-sm feature-card h-100">
+                    <div class="card-body d-flex align-items-start p-4">
+                        <div class="rounded bg-warning bg-opacity-10 text-warning p-3 me-3">
+                            <i class="bi bi-mortarboard fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">Образовательная ценность</h6>
+                            <p class="text-muted small mb-0">
+                                Идеально для студентов и новичков. Поймите процессы ML через наглядный интерфейс.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
