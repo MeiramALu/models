@@ -1,3 +1,5 @@
 .venv
+.env
+.idea
 media
 db.sqlite3
