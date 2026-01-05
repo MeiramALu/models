@@ -157,6 +157,10 @@
                     <i class="bi bi-cpu"></i>
                     <span>Обучение модели</span>
                 </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'nn_builder' %}active{% endif %}" href="{% url 'nn_builder' %}">
+                     <i class="bi bi-diagram-3"></i>
+                     <span>Нейросеть (Builder)</span>
+                </a>
             </nav>
 
         </div>

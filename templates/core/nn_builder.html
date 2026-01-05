@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="row g-4 h-100">
+    
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold py-3">
+                <i class="bi bi-tools me-2 text-primary"></i>Конструктор
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">Целевая переменная (Output)</label>
+                    <select id="targetSelect" class="form-select">
+                        {% for col in columns %}
+                        <option value="{{ col }}">{{ col }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <hr>
+
+                <label class="form-label small fw-bold text-muted">Архитектура</label>
+                <button onclick="addLayer()" class="btn btn-outline-primary w-100 mb-3 border-dashed">
+                    <i class="bi bi-plus-lg me-2"></i>Добавить скрытый слой
+                </button>
+                
+                <div class="alert alert-light border small text-muted">
+                    <i class="bi bi-info-circle me-1"></i> Слои выполняются последовательно сверху вниз.
+                </div>
+
+                <hr>
+
+                <label class="form-label small fw-bold text-muted">Настройки обучения</label>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="small text-muted">Эпохи</label>
+                        <input type="number" id="epochsInput" class="form-control" value="100">
+                    </div>
+                    <div class="col-6">
+                        <label class="small text-muted">Learning Rate</label>
+                        <input type="number" id="lrInput" class="form-control" value="0.001" step="0.0001">
+                    </div>
+                    <div class="col-12">
+                        <label class="small text-muted">Функция активации</label>
+                        <select id="activationSelect" class="form-select">
+                            <option value="relu">ReLU (Standard)</option>
+                            <option value="tanh">Tanh</option>
+                            <option value="logistic">Sigmoid</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button onclick="trainModel()" id="trainBtn" class="btn btn-success fw-bold py-2 shadow-sm">
+                        <i class="bi bi-play-fill me-1"></i>Запустить обучение
+                    </button>
+
+                    <button onclick="stopTraining()" id="stopBtn" class="btn btn-danger fw-bold py-2 shadow-sm d-none">
+                        <i class="bi bi-stop-fill me-1"></i>Стоп
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100 bg-light position-relative">
+            <div class="card-header bg-transparent border-0 py-3 text-center fw-bold text-muted">
+                Схема модели
+            </div>
+            <div class="card-body d-flex flex-column align-items-center" style="overflow-y: auto; max-height: 80vh;">
+
+                <div class="nn-block input-block">
+                    <div class="badge bg-secondary mb-1">Input Layer</div>
+                    <div class="small text-white opacity-75">Все признаки (X)</div>
+                    <div class="connector-line"></div>
+                </div>
+
+                <div id="layersContainer" class="w-100 d-flex flex-column align-items-center">
+                    </div>
+
+                <div class="nn-block output-block mt-2">
+                    <div class="badge bg-success mb-1">Output Layer</div>
+                    <div class="small text-white opacity-75">Target (y)</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-terminal me-2"></i>Консоль обучения</span>
+                <span id="statusBadge" class="badge bg-secondary text-dark">Ожидание</span>
+            </div>
+            <div class="card-body p-0 d-flex flex-column">
+
+                <div id="consoleLog" class="bg-black text-success font-monospace p-3 small" style="height: 150px; overflow-y: auto; border-bottom: 1px solid #333;">
+                    <span class="text-secondary">></span> Система готова.<br>
+                    <span class="text-secondary">></span> Добавьте слои и нажмите "Запустить".<br>
+                </div>
+
+                <div class="flex-grow-1 p-3 bg-white border-top">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="lossChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light border-top">
+                    <h6 class="fw-bold mb-2">Итоговые метрики:</h6>
+                    <div id="metricsContainer" class="d-flex gap-2 flex-wrap">
+                        <span class="text-muted small">Нет данных</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nn-block {
+        width: 200px;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        position: relative;
+        transition: all 0.3s;
+        z-index: 2;
+    }
+    .input-block { background: linear-gradient(135deg, #64748b, #475569); color: white; }
+    .output-block { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .hidden-layer { background: white; border: 2px solid #6366f1; color: #333; margin-bottom: 30px; }
+    .connector-line {
+        position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+        width: 2px; height: 30px; background-color: #cbd5e1; z-index: 1;
+    }
+    .connector-line::after {
+        content: ''; position: absolute; bottom: 0; left: -4px;
+        border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #cbd5e1;
+    }
+    .btn-remove-layer {
+        position: absolute; top: -10px; right: -10px; width: 25px; height: 25px;
+        border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 12px; background: #ef4444; color: white; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .btn-remove-layer:hover { background: #dc2626; }
+</style>
+
+<script>
+    let chartInstance = null;
+    let abortController = null;
+
+    function addLayer() {
+        const container = document.getElementById('layersContainer');
+        const layerId = Date.now();
+        const layerHTML = `
+            <div class="nn-block hidden-layer" id="layer-${layerId}">
+                <button class="btn-remove-layer" onclick="removeLayer('${layerId}')"><i class="bi bi-x"></i></button>
+                <div class="fw-bold text-primary mb-1">Dense Layer</div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-0">Neurons</span>
+                    <input type="number" class="form-control text-center neuron-count" value="32" min="1" max="512">
+                </div>
+                <div class="connector-line"></div>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', layerHTML);
+    }
+
+    function removeLayer(id) {
+        document.getElementById(`layer-${id}`).remove();
+    }
+
+    function logToConsole(text) {
+        const consoleEl = document.getElementById('consoleLog');
+        consoleEl.innerHTML += `<span class="text-success">></span> ${text}<br>`;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    // --- ЛОГИКА СТОП ---
+    function stopTraining() {
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+            logToConsole("<span class='text-danger fw-bold'>ОСТАНОВЛЕНО ПОЛЬЗОВАТЕЛЕМ</span>");
+            resetUI();
+
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.className = 'badge bg-secondary';
+            statusBadge.innerText = 'Прервано';
+        }
+    }
+
+    async function trainModel() {
+        const trainBtn = document.getElementById('trainBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusBadge = document.getElementById('statusBadge');
+
+        // Переключаем кнопки
+        trainBtn.classList.add('d-none');
+        stopBtn.classList.remove('d-none');
+
+        statusBadge.className = 'badge bg-warning text-dark';
+        statusBadge.innerText = 'Обучение...';
+
+        abortController = new AbortController();
+
+        const layers = [];
+        document.querySelectorAll('.neuron-count').forEach(input => layers.push({ neurons: input.value }));
+
+        if (layers.length === 0) {
+            logToConsole("ОШИБКА: Добавьте хотя бы один скрытый слой!");
+            resetUI();
+            return;
+        }
+
+        const payload = {
+            target: document.getElementById('targetSelect').value,
+            layers: layers,
+            params: {
+                epochs: document.getElementById('epochsInput').value,
+                lr: document.getElementById('lrInput').value,
+                activation: document.getElementById('activationSelect').value,
+            }
+        };
+
+        logToConsole(`Начинаем обучение... Эпох: ${payload.params.epochs}`);
+
+        try {
+            const response = await fetch("{% url 'api_train_nn' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(payload),
+                signal: abortController.signal
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                logToConsole(`ОШИБКА СЕРВЕРА: ${data.error}`);
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerText = 'Ошибка';
+            } else {
+                logToConsole("Обучение завершено успешно!");
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerText = 'Готово';
+                displayMetrics(data.metrics);
+                drawChart(data.loss_curve);
+            }
+
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                logToConsole(`ОШИБКА СЕТИ: ${error}`);
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerText = 'Ошибка сети';
+            }
+        } finally {
+            // Если контроллер еще существует (значит не нажали стоп), сбрасываем UI
+            if (abortController) {
+                resetUI();
+            }
+        }
+    }
+
+    function resetUI() {
+        const trainBtn = document.getElementById('trainBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        trainBtn.classList.remove('d-none');
+        stopBtn.classList.add('d-none');
+        abortController = null;
+    }
+
+    function displayMetrics(metrics) {
+        const container = document.getElementById('metricsContainer');
+        container.innerHTML = '';
+        for (const [key, value] of Object.entries(metrics)) {
+            container.innerHTML += `
+                <div class="px-3 py-2 bg-white rounded border text-center">
+                    <div class="small text-muted fw-bold text-uppercase">${key}</div>
+                    <div class="fs-5 fw-bold text-dark">${value}</div>
+                </div>`;
+        }
+    }
+
+    function drawChart(lossData) {
+        const ctx = document.getElementById('lossChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: lossData.length}, (_, i) => i + 1),
+                datasets: [{
+                    label: 'Loss',
+                    data: lossData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Важно для фикса высоты
+                scales: { x: {display: true}, y: {display: true} }
+            }
+        });
+    }
+</script>
+{% endblock %}

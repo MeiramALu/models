@@ -19,4 +19,7 @@ urlpatterns = [
 
     # Скрытый URL для скачивания файла (вызывается кнопкой)
     path('download_model/', views.download_model, name='download_model'),
+
+    path('neural-network/', views.nn_builder, name='nn_builder'),
+    path('api/train-nn/', views.api_train_nn, name='api_train_nn'),  # Скрытый API для AJAX
 ]

@@ -6,6 +6,11 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, FileResponse
 from django.contrib import messages
+import json
+from django.http import JsonResponse
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 # Импорт наших модулей
 from .models import UploadedDataset
@@ -476,3 +481,94 @@ def download_model(request):
     else:
         messages.error(request, "Файл модели не найден. Сначала обучите модель.")
         return redirect('train_model')
+
+
+def nn_builder(request):
+    """Отображает страницу конструктора"""
+    df, _ = get_df(request)
+    if df is None: return redirect('upload_data')
+
+    # Передаем колонки для выбора X и y
+    return render(request, 'core/nn_builder.html', {
+        'columns': df.columns.tolist()
+    })
+
+
+def api_train_nn(request):
+    """
+    AJAX API: Принимает архитектуру сети и настройки, обучает модель, возвращает JSON.
+    """
+    if request.method == 'POST':
+        try:
+            # 1. Получаем данные из JSON запроса
+            data = json.loads(request.body)
+
+            target_col = data.get('target')
+            layer_config = data.get('layers', [])  # Список: [{'neurons': 64}, {'neurons': 32}]
+            params = data.get('params', {})
+
+            # 2. Готовим данные
+            df, _ = get_df(request)
+            if df is None: return JsonResponse({'error': 'Данные не найдены'}, status=400)
+
+            X = delete_columns(df, target_col)
+            y = df[target_col]
+
+            # Масштабирование (обязательно для нейросетей)
+            scaler = StandardScaler()
+            X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+            # 3. Конфигурируем модель sklearn MLP
+            # Превращаем список слоев в кортеж размеров: (64, 32, ...)
+            hidden_layer_sizes = tuple([int(l['neurons']) for l in layer_config])
+
+            # Определяем тип задачи (регрессия или классификация) по типу данных y
+            is_classification = False
+            if y.dtype == 'object' or y.nunique() < 20:
+                is_classification = True
+                model = MLPClassifier(
+                    hidden_layer_sizes=hidden_layer_sizes,
+                    activation=params.get('activation', 'relu'),
+                    solver=params.get('solver', 'adam'),
+                    learning_rate_init=float(params.get('lr', 0.001)),
+                    max_iter=int(params.get('epochs', 200)),
+                    random_state=42
+                )
+            else:
+                model = MLPRegressor(
+                    hidden_layer_sizes=hidden_layer_sizes,
+                    activation=params.get('activation', 'relu'),
+                    solver=params.get('solver', 'adam'),
+                    learning_rate_init=float(params.get('lr', 0.001)),
+                    max_iter=int(params.get('epochs', 200)),
+                    random_state=42
+                )
+
+            # 4. Обучаем
+            model.fit(X_train, y_train)
+            pred = model.predict(X_test)
+
+            # 5. Считаем метрики
+            metrics = {}
+            if is_classification:
+                metrics['Accuracy'] = round(accuracy_score(y_test, pred), 4)
+                # Кривая потерь (Loss Curve)
+                loss_curve = model.loss_curve_
+            else:
+                metrics['R2 Score'] = round(r2_score(y_test, pred), 4)
+                metrics['MSE'] = round(mean_squared_error(y_test, pred), 4)
+                loss_curve = model.loss_curve_
+
+            return JsonResponse({
+                'status': 'success',
+                'metrics': metrics,
+                'loss_curve': loss_curve,  # Массив значений ошибки по эпохам
+                'iterations': model.n_iter_
+            })
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Only POST allowed'}, status=405)
